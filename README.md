@@ -80,6 +80,7 @@ The aim of AyuSense AI is to **bridge the gap between ancient Ayurvedic wisdom a
 
 Structure of the Project:
 ## 📁 Project Structure
+## 📁 Project Structure
 
 ```
 ayusense-ai/
