@@ -85,7 +85,6 @@ ayusense-ai/
 │ └── yoga/ # Yoga suggestions
 │
 └── README.md
-
 Author:
 Arya Ubale  
 Final Year Engineering Student  
