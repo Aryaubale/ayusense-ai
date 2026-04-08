@@ -37,28 +37,39 @@ The aim of AyuSense AI is to **bridge the gap between ancient Ayurvedic wisdom a
 - Focus on holistic well-being rather than reactive treatment
 -   
 🧠 System Architecture
-┌───────────────────────────────────────────────┐
-│ Frontend (React) │
-│ Chat UI │ Voice Input │ Response Display │
-│ (JavaScript + Web Speech API) │
-└──────────────────────┬────────────────────────┘
-│ HTTP Requests
-┌──────────────────────▼────────────────────────┐
-│ Application Layer │
-│ Input Processing │ API Handling │ Validation │
-└──────────────────────┬────────────────────────┘
-│
-┌──────────────────────▼────────────────────────┐
-│ AI / NLP Layer │
-│ Hugging Face Transformers │
-│ Intent Detection │ Entity Extraction │
-│ Response Generation │
-└──────────────────────┬────────────────────────┘
-│
-┌──────────────────────▼────────────────────────┐
-│ Ayurvedic Knowledge Engine │
-│ Remedies │ Diet │ Yoga │ Lifestyle Logic │
-└───────────────────────────────────────────────┘
+## 🧠 System Architecture (MERN Stack)
+
+```
+┌─────────────────────────────────────────────────────┐
+│                  React Frontend                     │
+│  Chat UI │ Voice Input │ Response Display           │
+│     (React + Web Speech API + Tailwind CSS)         │
+└───────────────────────┬─────────────────────────────┘
+                        │ HTTP / Axios
+┌───────────────────────▼─────────────────────────────┐
+│                Node.js / Express Backend            │
+│  ┌──────────────────────────────────────────────┐   │
+│  │              Middleware Layer                │   │
+│  │   Auth │ Validation │ Error Handling         │   │
+│  └──────────────────────────────────────────────┘   │
+│  ┌──────────────┐ ┌──────────────┐ ┌───────────┐   │
+│  │   Chat API   │ │  User API    │ │ NLP Logic │   │
+│  │ Controllers  │ │ Controllers  │ │ Service   │   │
+│  │   Services   │ │  Services    │ │ Layer     │   │
+│  │   Models     │ │  Models      │ │           │   │
+│  └──────────────┘ └──────────────┘ └───────────┘   │
+└───────────────────────┬─────────────────────────────┘
+                        │
+┌───────────────────────▼─────────────────────────────┐
+│                AI / NLP Integration                 │
+│   Hugging Face Transformers / API Processing       │
+│   Intent Detection │ Response Generation           │
+└───────────────────────┬─────────────────────────────┘
+                        │
+┌───────────────────────▼─────────────────────────────┐
+│                  MongoDB Database                   │
+│   Users │ Chat History │ Knowledge Base             │
+└─────────────────────────────────────────────────────┘
 
 🧠 Design Principles
 1)User-Centric Design: Simple and intuitive interaction  
