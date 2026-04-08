@@ -80,24 +80,21 @@ The aim of AyuSense AI is to **bridge the gap between ancient Ayurvedic wisdom a
 
 Structure of the Project:
 ## 📁 Project Structure
-## 📁 Project Structure
-
-```
 ayusense-ai/
-├── frontend/
-│   ├── components/
-│   ├── pages/
-│   ├── services/
-│   ├── utils/
-│   └── assets/
-├── models/
-│   └── nlp/
-├── knowledge-base/
-│   ├── remedies/
-│   ├── diet/
-│   └── yoga/
-└── README.md
-```
+├── frontend/                # React.js web application
+│   ├── src/
+│   │   ├── components/      # Reusable UI elements (Navbar, Buttons)
+│   │   ├── pages/          # Main views (Home, Quiz, Chat, Vault)
+│   │   ├── services/       # API call definitions (Axios/Fetch)
+│   │   ├── utils/          # Helper functions & constants
+│   │   └── assets/         # Images, icons, and styles
+├── models/                  # AI & Machine Learning logic
+│   └── nlp/                 # Prakriti detection & Chatbot scripts
+├── knowledge-base/          # Curated Ayurvedic data
+│   ├── remedies/            # Herbal treatment database
+│   ├── diet/                # Dosha-specific nutrition guides
+│   └── yoga/                # Asana recommendations
+└── README.md                # Project documentation
 Author:
 Arya Ubale  
 Final Year Engineering Student  
