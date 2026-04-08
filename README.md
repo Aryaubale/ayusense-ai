@@ -68,23 +68,24 @@ The aim of AyuSense AI is to **bridge the gap between ancient Ayurvedic wisdom a
 5)Extensibility: Easy to expand knowledge base and features 
 
 Structure of the Project:
+## 📁 Project Structure
+
+```
 ayusense-ai/
 ├── frontend/
-│ ├── components/ # Chat UI, input, response rendering
-│ ├── pages/ # Main chatbot interface
-│ ├── services/ # API communication logic
-│ ├── utils/ # Helpers and constants
-│ └── assets/ # Images, icons
-│
+│   ├── components/
+│   ├── pages/
+│   ├── services/
+│   ├── utils/
+│   └── assets/
 ├── models/
-│ └── nlp/ # NLP logic and processing
-│
+│   └── nlp/
 ├── knowledge-base/
-│ ├── remedies/ # Ayurvedic solutions
-│ ├── diet/ # Diet recommendations
-│ └── yoga/ # Yoga suggestions
-│
+│   ├── remedies/
+│   ├── diet/
+│   └── yoga/
 └── README.md
+```
 Author:
 Arya Ubale  
 Final Year Engineering Student  
