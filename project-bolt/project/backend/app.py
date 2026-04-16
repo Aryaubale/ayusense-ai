@@ -5,6 +5,10 @@ import joblib
 import pandas as pd
 import os
 import traceback
+from dotenv import load_dotenv
+
+# Load environment variables from a .env file (locally)
+load_dotenv()
 
 app = Flask(__name__)
 CORS(app)
@@ -12,9 +16,13 @@ CORS(app)
 # ================================
 # 🛰️ 1. DATABASE CONNECTION
 # ================================
-MONGO_URI = "mongodb+srv://aryacodes1_db_user:test123@cluster0.o7o4nng.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
+# We pull the URI from an environment variable instead of hardcoding it
+MONGO_URI = os.getenv("MONGO_URI")
 
 try:
+    if not MONGO_URI:
+        raise ValueError("MONGO_URI not found in environment variables")
+        
     client = MongoClient(
         MONGO_URI,
         tls=True,
@@ -104,7 +112,6 @@ def login():
         })
         if user:
             user['_id'] = str(user['_id'])
-            # Ensure reminders exist even for old accounts during login
             if "reminders" not in user:
                 user["reminders"] = {"brahmaMuhurta": True, "dinacharya": True, "herbReminder": True}
             return jsonify({"success": True, "user": user})
