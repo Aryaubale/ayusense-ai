@@ -1,0 +1,56 @@
+/* Import the Gen Z Aesthetic Fonts */
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Montserrat:wght@300;400;600&display=swap');
+
+/* Apply the fonts to the classes used in Dashboard.tsx */
+.font-serif {
+  font-family: 'Playfair Display', serif !important;
+}
+
+.font-sans {
+  font-family: 'Montserrat', sans-serif !important;
+}
+
+/* Custom Soft Background Glows */
+.bg-blur-green {
+  background: radial-gradient(circle, rgba(139, 168, 112, 0.2) 0%, rgba(253, 251, 247, 0) 70%);
+  filter: blur(60px);
+}
+
+/* Smooth Video Hover Effect */
+.video-zoom-container video {
+  transition: transform 1.2s cubic-bezier(0.2, 1, 0.3, 1);
+}
+
+.video-zoom-container:hover video {
+  transform: scale(1.1);
+}
+
+/* Custom Scrollbar for a clean look */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #fdfbf7;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #d1ccbf;
+  border-radius: 10px;
+}
+
+/* Animation for the "Ancient Wisdom" title */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-reveal {
+  animation: fadeInUp 1s ease-out forwards;
+}

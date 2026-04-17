@@ -1,159 +1,169 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+  useLocation
+} from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { LanguageProvider } from './context/LanguageContext';
 import { AuthForm } from './components/Auth/AuthForm';
-import Layout from './components/Layout/Layout';
-import AnimatedLayout from './components/Layout/AnimatedLayout'; // ✅ NEW
-import { AnimatePresence } from 'framer-motion'; // ✅ NEW
+import AnimatedLayout from './components/Layout/AnimatedLayout';
+import { AnimatePresence } from 'framer-motion';
+
 import Dashboard from './pages/Dashboard';
 import { Chat } from './pages/Chat';
 import { Prakriti } from './pages/Prakriti';
 import { History } from './pages/History';
 import { Settings } from './pages/Settings';
-import { HumanPrakriti } from './pages/HumanPrakriti'; 
+import { HumanPrakriti } from './pages/HumanPrakriti';
 import ConsultVaidya from './pages/ConsultVaidya';
-import { BookAppointment } from './pages/BookAppointment'; 
+import { BookAppointment } from './pages/BookAppointment';
 import { Profile } from './pages/Profile';
 import SplashScreen from './components/Layout/SpashScreen';
 
 const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user } = useAuth();
+
+  // ✅ FIX: strict protection
   if (!user) {
     return <Navigate to="/auth" replace />;
   }
+
   return <>{children}</>;
 };
 
 const AppRoutes: React.FC = () => {
   const { user } = useAuth();
-  const location = useLocation(); // ✅ for animation
+  const location = useLocation();
 
   return (
     <AnimatePresence mode="wait">
       <Routes location={location} key={location.pathname}>
 
-        {/* Auth */}
-        <Route 
-          path="/auth" 
+        {/* AUTH */}
+        <Route
+          path="/auth"
           element={
-            user ? <Navigate to="/dashboard" replace /> : 
-            <AuthForm onSuccess={() => {}} />
-          } 
+            user
+              ? <Navigate to="/dashboard" replace />
+              : <AuthForm onSuccess={() => {}} />
+          }
         />
 
-        {/* Dashboard */}
-        <Route 
-          path="/dashboard" 
+        {/* DASHBOARD */}
+        <Route
+          path="/dashboard"
           element={
             <ProtectedRoute>
-              <AnimatedLayout> {/* ✅ CHANGED */}
+              <AnimatedLayout>
                 <Dashboard />
               </AnimatedLayout>
             </ProtectedRoute>
-          } 
+          }
         />
 
-        {/* Human Prakriti */}
-        <Route 
-          path="/human-prakriti" 
+        {/* HUMAN PRAKRITI */}
+        <Route
+          path="/human-prakriti"
           element={
             <ProtectedRoute>
               <AnimatedLayout>
                 <HumanPrakriti />
               </AnimatedLayout>
             </ProtectedRoute>
-          } 
+          }
         />
 
-        {/* Consult */}
-        <Route 
-          path="/consult-vaidya" 
+        {/* CONSULT */}
+        <Route
+          path="/consult-vaidya"
           element={
             <ProtectedRoute>
               <AnimatedLayout>
                 <ConsultVaidya />
               </AnimatedLayout>
             </ProtectedRoute>
-          } 
+          }
         />
 
-        {/* Book Appointment */}
-        <Route 
-          path="/book-appointment" 
+        {/* BOOK */}
+        <Route
+          path="/book-appointment"
           element={
             <ProtectedRoute>
               <AnimatedLayout>
                 <BookAppointment />
               </AnimatedLayout>
             </ProtectedRoute>
-          } 
+          }
         />
 
-        {/* Chat */}
-        <Route 
-          path="/chat" 
+        {/* CHAT */}
+        <Route
+          path="/chat"
           element={
             <ProtectedRoute>
               <AnimatedLayout>
                 <Chat />
               </AnimatedLayout>
             </ProtectedRoute>
-          } 
+          }
         />
 
-        {/* Prakriti */}
-        <Route 
-          path="/prakriti" 
+        {/* PRAKRITI */}
+        <Route
+          path="/prakriti"
           element={
             <ProtectedRoute>
               <AnimatedLayout>
                 <Prakriti />
               </AnimatedLayout>
             </ProtectedRoute>
-          } 
+          }
         />
 
-        {/* History */}
-        <Route 
-          path="/history" 
+        {/* HISTORY */}
+        <Route
+          path="/history"
           element={
             <ProtectedRoute>
               <AnimatedLayout>
                 <History />
               </AnimatedLayout>
             </ProtectedRoute>
-          } 
+          }
         />
 
-        {/* Settings */}
-        <Route 
-          path="/settings" 
+        {/* SETTINGS */}
+        <Route
+          path="/settings"
           element={
             <ProtectedRoute>
               <AnimatedLayout>
                 <Settings />
               </AnimatedLayout>
             </ProtectedRoute>
-          } 
+          }
         />
 
-        {/* Profile */}
-        <Route 
-          path="/profile" 
+        {/* PROFILE */}
+        <Route
+          path="/profile"
           element={
             <ProtectedRoute>
               <AnimatedLayout>
                 <Profile />
               </AnimatedLayout>
             </ProtectedRoute>
-          } 
+          }
         />
 
-        {/* Default */}
-        <Route 
-          path="/" 
+        {/* DEFAULT ROUTE */}
+        <Route
+          path="/"
           element={<Navigate to={user ? "/dashboard" : "/auth"} replace />}
         />
 
@@ -170,12 +180,12 @@ function App() {
       <LanguageProvider>
         <Router>
 
-          {/* 🌿 Splash */}
+          {/* 🌿 Splash Screen */}
           {showSplash && (
             <SplashScreen onFinish={() => setShowSplash(false)} />
           )}
 
-          {/* 🌿 Main */}
+          {/* 🌿 Main App */}
           {!showSplash && (
             <>
               <AppRoutes />

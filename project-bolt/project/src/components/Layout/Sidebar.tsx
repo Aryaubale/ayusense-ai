@@ -3,11 +3,10 @@ import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { 
   HomeIcon, 
   ChatBubbleLeftRightIcon, 
-  DocumentTextIcon, 
+  DocumentTextIcon,
   ClockIcon,
   Cog6ToothIcon,
   ArrowRightOnRectangleIcon,
-  LanguageIcon,
   UserGroupIcon, 
   InformationCircleIcon,
   UserIcon
@@ -16,18 +15,14 @@ import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 
 export const Sidebar: React.FC = () => {
-  const { signOut, user } = useAuth();
-  const { t, language, setLanguage } = useLanguage();
+  const { logout, user } = useAuth();
+  const { t } = useLanguage();
   const navigate = useNavigate();
   const location = useLocation();
 
-  const handleSignOut = async () => {
-    await signOut();
-    navigate('/');
-  };
-
-  const toggleLanguage = () => {
-    setLanguage(language === 'en' ? 'hi' : 'en');
+  const handleSignOut = () => {
+    logout();
+    navigate('/auth');
   };
 
   const navItems = [
@@ -97,19 +92,8 @@ export const Sidebar: React.FC = () => {
         })}
       </nav>
 
-      {/* ⚙️ BOTTOM ACTIONS (NO BORDER = NO LINE ISSUE) */}
+      {/* ⚙️ BOTTOM ACTIONS */}
       <div className="p-4 space-y-2">
-
-        {/* 🌐 LANGUAGE */}
-        <button
-          onClick={toggleLanguage}
-          className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-white/80 hover:bg-[#4b4f2f] transition"
-        >
-          <LanguageIcon className="w-5 h-5" />
-          <span className="text-sm">
-            {language === 'en' ? 'हिंदी (Hindi)' : 'English'}
-          </span>
-        </button>
 
         {/* ⚙️ SETTINGS */}
         <NavLink

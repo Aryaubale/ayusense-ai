@@ -1,283 +1,274 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
   PaperAirplaneIcon, 
   MicrophoneIcon, 
-  ExclamationTriangleIcon,
-  CpuChipIcon
-} from '@heroicons/react/24/outline';
-import { useAuth } from '../context/AuthContext';
-import { useLanguage } from '../context/LanguageContext';
-import { getChatResponse, detectEmergency } from '../services/api';
-// 🛑 Removed Supabase import
-import { ChatMessage } from '../types';
-import toast from 'react-hot-toast';
+  StopIcon, 
+  ChevronLeftIcon,
+  TrashIcon 
+} from "@heroicons/react/24/outline";
+import { useAuth } from "../context/AuthContext";
+import { getChatResponse, detectEmergency } from "../services/api";
+import toast from "react-hot-toast";
+import bgImage from "../assets/finalbackg.jpeg";
 
-interface ChatMessageUI extends ChatMessage {
-  isLoading?: boolean;
+interface IWindow extends Window {
+  webkitSpeechRecognition: any;
 }
+const { webkitSpeechRecognition } = (window as unknown) as IWindow;
 
 export const Chat: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { t } = useLanguage();
-  
-  const [messages, setMessages] = useState<ChatMessageUI[]>([]);
-  const [inputMessage, setInputMessage] = useState('');
-  const [isListening, setIsListening] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [emergencyAlert, setEmergencyAlert] = useState(false);
-  
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const recognitionRef = useRef<any>(null);
 
-  // 🌍 Base URL for your Flask Backend
+  const [messages, setMessages] = useState<any[]>([]);
+  const [inputMessage, setInputMessage] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [isListening, setIsListening] = useState(false);
+  const [lang, setLang] = useState<"en" | "hi">("en");
+
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [typingTimer, setTypingTimer] = useState<any>(null);
+
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const recognitionRef = useRef<any>(null);
+  const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
+
+  // Base API URL
   const API_URL = "http://localhost:5000/api";
 
+  // ================= DELETE MESSAGE (FIXED TO MATCH BACKEND) =================
+  const deleteMessage = async (id: string) => {
+    try {
+      // ✅ Changed endpoint to /delete_message to match your friend's code
+      const response = await fetch(`${API_URL}/delete_message`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ 
+          email: user?.email, 
+          id: id // ✅ Changed chatId to id to match your friend's data.get("id")
+        }),
+      });
+
+      if (response.ok) {
+        setMessages((prev) => prev.filter((m) => m.id !== id));
+        toast.success("Message deleted");
+      } else {
+        toast.error("Failed to delete from history");
+      }
+    } catch (err) {
+      console.error("Delete error:", err);
+      toast.error("Network Error: Could not delete");
+    }
+  };
+
+  // ================= TRANSLITERATION =================
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setInputMessage(val);
+    if (lang === "hi" && val.length > 0) {
+      const words = val.trimEnd().split(" ");
+      const lastWord = words[words.length - 1];
+      if (lastWord.length > 0) {
+        clearTimeout(typingTimer);
+        const timer = setTimeout(() => fetchSuggestions(lastWord), 100);
+        setTypingTimer(timer);
+      } else {
+        setSuggestions([]);
+      }
+    } else {
+      setSuggestions([]);
+    }
+  };
+
+  const fetchSuggestions = async (word: string) => {
+    try {
+      const res = await fetch(`https://inputtools.google.com/request?text=${word}&itc=hi-t-i0-und&num=5`);
+      const data = await res.json();
+      if (data[0] === "SUCCESS") setSuggestions(data[1][0][1]);
+    } catch (err) {
+      console.error("Transliteration error", err);
+    }
+  };
+
+  const selectSuggestion = (sug: string) => {
+    const words = inputMessage.split(" ");
+    words[words.length - 1] = sug;
+    setInputMessage(words.join(" ") + " ");
+    setSuggestions([]);
+    inputRef.current?.focus();
+  };
+
+  // ================= CHAT HISTORY LOADING =================
   useEffect(() => {
-    loadChatHistory();
-    initializeSpeechRecognition();
+    if (!user?.email) return;
+    fetch(`${API_URL}/chat_history?email=${user.email}`)
+      .then((res) => res.json())
+      .then((data) => { if (data.success) setMessages(data.history); });
   }, [user]);
 
   useEffect(() => {
-    scrollToBottom();
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
+  useEffect(() => {
+    const loadVoices = () => setVoices(window.speechSynthesis.getVoices());
+    loadVoices();
+    window.speechSynthesis.onvoiceschanged = loadVoices;
+  }, []);
 
-  // 🔄 1. Load History from MongoDB instead of Supabase
-  const loadChatHistory = async () => {
-    if (!user?.email) return;
-    try {
-      const response = await fetch(`${API_URL}/chat_history?email=${user.email}`);
-      const data = await response.json();
-      if (data.success) {
-        setMessages(data.history);
-      }
-    } catch (error) {
-      console.error('Error loading chat history:', error);
-    }
-  };
-
-  const initializeSpeechRecognition = () => {
-    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-      const SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
-      recognitionRef.current = new SpeechRecognition();
-      recognitionRef.current.continuous = false;
-      recognitionRef.current.interimResults = false;
-      recognitionRef.current.lang = 'en-US';
-
-      recognitionRef.current.onresult = (event: any) => {
-        const transcript = event.results[0][0].transcript;
-        setInputMessage(transcript);
-        setIsListening(false);
-      };
-      recognitionRef.current.onerror = () => {
-        setIsListening(false);
-        toast.error('Speech recognition error.');
-      };
-      recognitionRef.current.onend = () => setIsListening(false);
-    }
+  const speakText = (text: string) => {
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    const selectedVoice = voices.find(v => lang === "hi" ? v.lang.includes("hi") : v.lang.includes("en"));
+    if (selectedVoice) utterance.voice = selectedVoice;
+    utterance.lang = lang === "hi" ? "hi-IN" : "en-US";
+    utterance.rate = 0.95;
+    window.speechSynthesis.speak(utterance);
   };
 
   const startListening = () => {
-    if (recognitionRef.current) {
-      setIsListening(true);
-      recognitionRef.current.start();
-    }
-  };
-
-  const stopListening = () => {
-    if (recognitionRef.current) {
-      recognitionRef.current.stop();
+    if (!webkitSpeechRecognition) return toast.error("Browser not supported");
+    const recognition = new webkitSpeechRecognition();
+    recognition.lang = lang === "hi" ? "hi-IN" : "en-US";
+    recognition.onstart = () => setIsListening(true);
+    recognition.onresult = (e: any) => {
+      setInputMessage(e.results[0][0].transcript);
       setIsListening(false);
-    }
+    };
+    recognition.onerror = () => setIsListening(false);
+    recognitionRef.current = recognition;
+    recognition.start();
   };
 
-  // 💬 2. Send Message and Save to MongoDB
-  const handleSendMessage = async (customMessage?: string) => {
-    const msgToSend = customMessage || inputMessage;
-    if (!msgToSend.trim() || isLoading) return;
-
-    const userMessage = msgToSend.trim();
-    setInputMessage('');
+  // ================= SEND MESSAGE =================
+  const sendMessage = async () => {
+    if (!inputMessage.trim() || isLoading) return;
+    const msg = inputMessage;
+    setInputMessage("");
+    setSuggestions([]);
     setIsLoading(true);
+    if (detectEmergency(msg)) toast.error("⚠️ Emergency Alert!");
 
-    // Emergency Detection
-    if (detectEmergency(userMessage)) {
-      setEmergencyAlert(true);
-      setTimeout(() => setEmergencyAlert(false), 10000);
-    }
+    const id = Date.now().toString();
+    const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-    const tempId = Date.now().toString();
-    const newMessage: ChatMessageUI = {
-      id: tempId,
-      user_id: user?._id || '', // Using MongoDB _id
-      message: userMessage,
-      response: '',
-      created_at: new Date().toISOString(),
-      isLoading: true,
-    };
-
-    setMessages(prev => [...prev, newMessage]);
+    setMessages(prev => [...prev, { id, message: msg, response: "", isLoading: true, time: timestamp }]);
 
     try {
-      // Step A: Get AI Response from Flask
-      const { response } = await getChatResponse(userMessage);
+      const enrichedMessage =
+        user?.prakriti && user.prakriti !== "Not Analyzed"
+          ? `You are an Ayurvedic doctor. User Prakriti: ${user.prakriti}\n\nGive a structured answer including:\n- Cause\n- Remedy\n- Diet\n- Lifestyle\n\nQuestion: ${msg}`
+          : msg;
 
-      // Step B: Save to MongoDB via Flask
-      const saveResponse = await fetch(`${API_URL}/save_chat`, {
+      const { response } = await getChatResponse(enrichedMessage, [], user?.prakriti || "", lang);
+
+      // ✅ POST to /save_chat
+      await fetch(`${API_URL}/save_chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email: user?.email,
-          message: userMessage,
+          message: msg,
           response: response
         }),
       });
 
-      const saveData = await saveResponse.json();
-
-      if (saveData.success) {
-        setMessages(prev => prev.map(msg => 
-          msg.id === tempId ? { ...saveData.chat, isLoading: false } : msg
-        ));
-      } else {
-        // Fallback if save fails but AI worked
-        setMessages(prev => prev.map(msg => 
-          msg.id === tempId ? { ...newMessage, response, isLoading: false } : msg
-        ));
-      }
-    } catch (error) {
-      console.error('Chat Error:', error);
-      toast.error('Failed to connect to AI server.');
-      setMessages(prev => prev.filter(msg => msg.id !== tempId));
+      setMessages(prev => prev.map(m => m.id === id ? { ...m, response, isLoading: false } : m));
+    } catch (err) {
+      toast.error("Network Error");
+      setMessages(prev => prev.filter(m => m.id !== id));
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSendMessage();
-    }
-  };
-
   return (
-    <div className="flex flex-col h-screen bg-white">
-      {/* Navigation Header */}
-      <div className="bg-gray-50/50 p-2 border-b flex items-center justify-between">
-        <button onClick={() => navigate("/dashboard")} className="text-xs text-green-700 font-medium px-3 py-1 hover:bg-green-50 rounded-lg">
-          ← Dashboard
-        </button>
-        <span className="text-sm font-semibold text-gray-500 pr-4">AyuSense AI Chat</span>
-      </div>
+    <div className="h-screen w-full relative overflow-hidden flex flex-col font-sans">
+      <img src={bgImage} className="absolute w-full h-full object-cover" alt="background" />
+      <div className="relative z-10 flex flex-col h-full bg-slate-900/40 backdrop-blur-[2px]">
+        
+        {/* HEADER */}
+        <header className="bg-white/95 backdrop-blur-md px-4 py-3 flex justify-between items-center border-b border-teal-100 shadow-sm">
+          <button onClick={() => navigate("/dashboard")} className="flex items-center text-teal-800 hover:text-teal-600 transition-colors font-medium">
+            <ChevronLeftIcon className="w-5 h-5 mr-1" /> Back
+          </button>
+          <div className="text-center">
+            <h1 className="font-bold text-teal-900 text-lg tracking-tight">AyuSense AI</h1>
+            <p className="text-[10px] text-teal-600 font-bold uppercase tracking-widest">Ayurvedic Assistant</p>
+          </div>
+          <button onClick={() => { setLang(lang === "en" ? "hi" : "en"); setSuggestions([]); }} className="bg-teal-700 hover:bg-teal-800 text-white px-4 py-1.5 rounded-full text-xs font-bold shadow-md transition-all active:scale-95">
+            {lang === "en" ? "EN" : "हिन्दी"}
+          </button>
+        </header>
 
-      {/* Emergency Alert */}
-      <AnimatePresence>
-        {emergencyAlert && (
-          <motion.div initial={{ opacity: 0, y: -50 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -50 }} className="bg-red-600 text-white p-3 text-center z-50">
-            <div className="flex justify-center items-center gap-2">
-              <ExclamationTriangleIcon className="w-5 h-5" />
-              <span className="text-sm font-medium">Please seek immediate medical attention for severe symptoms.</span>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <div className="flex-1 overflow-y-auto flex flex-col">
-        {/* Quote Banner */}
-        <div className="m-4 p-4 rounded-xl bg-green-50 border border-green-100 text-center">
-          <p className="text-green-800 font-serif text-lg italic">नित्यं हिताहारविहारसेवी ॥</p>
-          <p className="text-green-600 text-xs mt-1">Health comes from balanced living.</p>
-        </div>
-
-        <div className="flex-1 p-6">
-          {messages.length === 0 ? (
-            <div className="h-full flex flex-col items-center justify-center text-center space-y-6">
-              <div className="w-16 h-16 bg-green-100 rounded-2xl flex items-center justify-center text-green-600 shadow-sm border border-green-200">
-                <CpuChipIcon className="w-10 h-10" />
-              </div>
-              <div className="max-w-md">
-                <h2 className="text-2xl font-bold text-gray-800">Welcome, {user?.name?.split(' ')[0]}</h2>
-                <p className="text-gray-500 mt-2">How can AyuSense help your wellness journey today?</p>
-              </div>
-
-              <div className="flex flex-wrap justify-center gap-3 mt-4">
-                {['I have a headache', 'Feeling stressed', 'Better digestion tips'].map((chip) => (
-                  <button 
-                    key={chip}
-                    onClick={() => handleSendMessage(chip)}
-                    className="px-6 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-600 hover:border-green-300 hover:bg-green-50 transition-all shadow-sm"
-                  >
-                    {chip}
+        {/* CHAT AREA */}
+        <main className="flex-1 overflow-y-auto p-4 space-y-4">
+          {messages.map((m) => (
+            <div key={m.id} className="group animate-in fade-in slide-in-from-bottom-2 duration-300">
+              <div className="flex flex-col items-end mb-4">
+                <div className="flex items-center gap-2 group">
+                  <button onClick={() => deleteMessage(m.id)} className="opacity-0 group-hover:opacity-100 p-1 text-white/50 hover:text-red-400 transition-all">
+                    <TrashIcon className="w-4 h-4" />
                   </button>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <div className="max-w-3xl mx-auto space-y-6 pb-10">
-              {messages.map((message) => (
-                <div key={message.id} className="space-y-4">
-                  <div className="flex justify-end">
-                    <div className="bg-green-600 text-white p-3 px-5 rounded-2xl rounded-tr-none shadow-sm max-w-[80%]">
-                      {message.message}
-                    </div>
-                  </div>
-                  <div className="flex justify-start items-start gap-3">
-                    <div className="w-8 h-8 rounded-lg bg-green-100 flex items-center justify-center shrink-0 border border-green-200">
-                      <span className="text-xs">🌿</span>
-                    </div>
-                    <div className="bg-gray-100 text-gray-800 p-4 rounded-2xl rounded-tl-none shadow-sm max-w-[85%] border border-gray-200">
-                      {message.isLoading ? (
-                        <div className="flex gap-1">
-                          <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" />
-                          <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce [animation-delay:0.2s]" />
-                          <span className="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce [animation-delay:0.4s]" />
-                        </div>
-                      ) : (
-                        <div className="whitespace-pre-wrap">{message.response}</div>
-                      )}
-                    </div>
+                  <div className="bg-teal-600 text-white px-4 py-2.5 rounded-2xl rounded-tr-none shadow-md">
+                    <p className="text-sm leading-relaxed">{m.message}</p>
                   </div>
                 </div>
+                <span className="text-[10px] text-white/70 mt-1 mr-1">{m.time}</span>
+              </div>
+              <div className="flex justify-start items-start gap-2 mb-6">
+                <div className="bg-white/95 border border-teal-50 px-4 py-3 rounded-2xl rounded-bl-none max-w-[85%] relative shadow-lg">
+                  {!m.isLoading && (
+                    <div className="absolute -top-3 -right-3 flex gap-1">
+                       <button onClick={() => speakText(m.response)} className="bg-white text-teal-600 rounded-full shadow-lg p-1.5 hover:scale-110 transition-transform border border-teal-100">
+                        🔊
+                      </button>
+                    </div>
+                  )}
+                  {m.isLoading ? (
+                    <div className="flex gap-1 py-1">
+                      <div className="w-2 h-2 bg-teal-400 rounded-full animate-bounce" />
+                      <div className="w-2 h-2 bg-teal-400 rounded-full animate-bounce [animation-delay:0.2s]" />
+                      <div className="w-2 h-2 bg-teal-400 rounded-full animate-bounce [animation-delay:0.4s]" />
+                    </div>
+                  ) : (
+                    <p className="text-sm text-slate-800 leading-relaxed whitespace-pre-line">{m.response}</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+          <div ref={messagesEndRef} />
+        </main>
+
+        {/* INPUT SECTION */}
+        <footer className="p-4 bg-white/95 backdrop-blur-md border-t border-teal-100 relative">
+          {suggestions.length > 0 && (
+            <div className="absolute bottom-[100%] left-0 w-full bg-teal-50/95 backdrop-blur-sm border-t border-teal-200 p-2 flex gap-2 overflow-x-auto no-scrollbar shadow-inner z-50">
+              {suggestions.map((s, i) => (
+                <button key={i} onClick={() => selectSuggestion(s)} className="bg-white px-4 py-1.5 rounded-lg border border-teal-200 hover:bg-teal-600 hover:text-white text-teal-800 font-medium text-sm transition-colors whitespace-nowrap shadow-sm">
+                  {s}
+                </button>
               ))}
-              <div ref={messagesEndRef} />
             </div>
           )}
-        </div>
-      </div>
-
-      {/* Input Bar */}
-      <div className="p-4 bg-white border-t">
-        <div className="max-w-4xl mx-auto flex gap-3 items-center bg-gray-100 p-1.5 pl-4 rounded-2xl border border-gray-200">
-          <input
-            value={inputMessage}
-            onChange={(e) => setInputMessage(e.target.value)}
-            onKeyDown={handleKeyPress}
-            className="flex-1 bg-transparent border-none focus:ring-0 text-gray-700 py-2 outline-none"
-            placeholder="Describe your concern..."
-          />
-          <button 
-            onClick={() => isListening ? stopListening() : startListening()}
-            className={`p-2 rounded-xl transition-colors ${isListening ? 'text-red-500 bg-red-50' : 'text-gray-400 hover:text-green-600 hover:bg-green-50'}`}
-          >
-            <MicrophoneIcon className="w-6 h-6" />
-          </button>
-          <button
-            onClick={() => handleSendMessage()}
-            disabled={!inputMessage.trim() || isLoading}
-            className="bg-green-600 hover:bg-green-700 text-white p-2.5 rounded-xl disabled:opacity-50 transition-all shadow-md active:scale-95"
-          >
-            <PaperAirplaneIcon className="w-5 h-5" />
-          </button>
-        </div>
-        <p className="text-[10px] text-gray-400 text-center mt-2">Consult a professional for serious medical issues.</p>
+          <div className="max-w-4xl mx-auto flex gap-3 items-center">
+            <button onClick={isListening ? () => recognitionRef.current.stop() : startListening} className={`p-3 rounded-2xl transition-all shadow-sm ${isListening ? "bg-red-500 animate-pulse scale-110" : "bg-teal-50 hover:bg-teal-100"}`}>
+              {isListening ? <StopIcon className="w-6 h-6 text-white" /> : <MicrophoneIcon className="w-6 h-6 text-teal-700" />}
+            </button>
+            <div className="flex-1 relative">
+              <input ref={inputRef} value={inputMessage} onChange={handleInputChange} onKeyDown={(e) => e.key === "Enter" && sendMessage()} className="w-full bg-slate-50 border border-slate-200 p-3.5 rounded-2xl outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-200/50 transition-all text-sm" placeholder={lang === "en" ? "Describe your symptoms..." : "अपनी समस्या बताएं..."} />
+            </div>
+            <button onClick={sendMessage} disabled={isLoading || !inputMessage.trim()} className="bg-teal-800 hover:bg-teal-900 disabled:bg-slate-300 text-white p-3.5 rounded-2xl transition-all shadow-md active:scale-95">
+              <PaperAirplaneIcon className="w-6 h-6 -rotate-45" />
+            </button>
+          </div>
+        </footer>
       </div>
     </div>
   );
 };
+
+export default Chat;

@@ -1,159 +1,111 @@
-import axios from 'axios';
-import { supabase } from '../lib/supabase';
+// ===============================
+// 🔥 MAIN CHAT FUNCTION
+// ===============================
+export const getChatResponse = async (
+  message: string,
+  userHistory?: any[],
+  prakriti?: string,
+  lang: "en" | "hi" = "en"
+) => {
+  const RENDER_URL = "https://ayusense-ai.onrender.com/chat";
 
-const api = axios.create();
-
-// OpenAI API for chatbot
-export const getChatResponse = async (message: string, userHistory?: any[], prakriti?: string) => {
   try {
-    // Simulate OpenAI API call with mock response
-    await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate API delay
-    
-    const contextPrompt = prakriti 
-      ? `User's Prakriti (Ayurvedic constitution): ${prakriti}. `
-      : '';
-    
-    // Mock Ayurvedic AI responses based on common symptoms
-    const responses = {
-      headache: `${contextPrompt}Based on Ayurvedic principles, headaches can be caused by aggravated Vata or Pitta dosha. 
+    const res = await fetch(RENDER_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        query: message,
+        lang,
+        history: userHistory || [],
+        prakriti: prakriti || "",
+      }),
+    });
 
-**Possible Causes:**
-- Stress and anxiety (Vata imbalance)
-- Heat and acidity (Pitta imbalance)
-- Poor digestion
+    const data = await res.json();
 
-**Recommendations:**
-- Practice Pranayama (breathing exercises)
-- Apply sesame oil to temples
-- Drink warm water with ginger
-- Avoid spicy and fried foods
-- Get adequate sleep
+    if (!res.ok) {
+      throw new Error(data?.error || "Backend error");
+    }
 
-**Herbs:** Brahmi, Shankhpushpi, Jatamansi`,
-      
-      stress: `${contextPrompt}Stress is primarily a Vata disorder in Ayurveda.
+    if (!data?.response) {
+      throw new Error("Empty response from backend");
+    }
 
-**Ayurvedic Treatment:**
-- Abhyanga (oil massage) with warm sesame oil
-- Meditation and yoga
-- Ashwagandha and Brahmi herbs
-- Warm milk with turmeric before sleep
-- Regular sleep schedule
+    return { response: data.response };
+  } catch (error) {
+    console.warn("⚠️ Backend failed, using fallback AI");
 
-**Diet:** Warm, cooked foods; avoid cold and dry foods`,
-      
-      digestion: `${contextPrompt}Digestive issues often stem from weakened Agni (digestive fire).
-
-**Recommendations:**
-- Drink warm water with lemon in the morning
-- Eat largest meal at midday when Agni is strongest
-- Take Triphala before sleep
-- Avoid cold drinks during meals
-- Include ginger, cumin, and coriander in cooking
-
-**Practice:** Eat mindfully and avoid overeating`,
-      
-      default: `${contextPrompt}Thank you for sharing your symptoms. In Ayurveda, we believe in treating the root cause rather than just symptoms.
-
-**General Ayurvedic Principles:**
-- Balance your doshas through proper diet and lifestyle
-- Follow daily routines (Dinacharya)
-- Practice yoga and meditation
-- Use natural herbs and remedies
-- Maintain strong digestive fire (Agni)
-
-Please consult with a qualified Ayurvedic practitioner for personalized treatment. Would you like specific advice for any particular symptoms?`
-    };
-
-    // Simple keyword matching for demo
+    const contextPrompt = prakriti ? `User's Prakriti: ${prakriti}. ` : "";
     const lowerMessage = message.toLowerCase();
-    let response = responses.default;
-    
-    if (lowerMessage.includes('headache') || lowerMessage.includes('head')) {
-      response = responses.headache;
-    } else if (lowerMessage.includes('stress') || lowerMessage.includes('anxiety')) {
-      response = responses.stress;
-    } else if (lowerMessage.includes('digestion') || lowerMessage.includes('stomach') || lowerMessage.includes('acidity')) {
-      response = responses.digestion;
+
+    // ===============================
+    // 🧠 FALLBACK RESPONSES (BILINGUAL)
+    // ===============================
+
+    if (lowerMessage.includes("headache") || lowerMessage.includes("head")) {
+      return {
+        response:
+          lang === "hi"
+            ? `${contextPrompt}सिरदर्द अक्सर वात या पित्त असंतुलन के कारण होता है। गर्म तेल मालिश और आराम करें।`
+            : `${contextPrompt}Headache is often due to Vata or Pitta imbalance. Try warm oil massage, hydration, and rest.`,
+      };
     }
 
-    return { response };
-  } catch (error) {
-    console.error('Chat API Error:', error);
-    return { 
-      response: 'I apologize, but I am having trouble processing your request right now. Please try again later or consult with a qualified Ayurvedic practitioner.' 
-    };
-  }
-};
-
-// Prakriti ML API
-export const getPrakritiPrediction = async (answers: number[]) => {
-  try {
-    // Simulate ML API call
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    // Mock calculation based on answers
-    const vataScore = answers.slice(0, 5).reduce((sum, val) => sum + val, 0);
-    const pittaScore = answers.slice(5, 10).reduce((sum, val) => sum + val, 0);
-    const kaphaScore = answers.slice(10, 15).reduce((sum, val) => sum + val, 0);
-    
-    const total = vataScore + pittaScore + kaphaScore;
-    const vataPercentage = (vataScore / total) * 100;
-    const pittaPercentage = (pittaScore / total) * 100;
-    const kaphaPercentage = (kaphaScore / total) * 100;
-    
-    let dominantDosha = 'Vata';
-    if (pittaPercentage > vataPercentage && pittaPercentage > kaphaPercentage) {
-      dominantDosha = 'Pitta';
-    } else if (kaphaPercentage > vataPercentage && kaphaPercentage > pittaPercentage) {
-      dominantDosha = 'Kapha';
+    if (
+      lowerMessage.includes("stress") ||
+      lowerMessage.includes("anxiety")
+    ) {
+      return {
+        response:
+          lang === "hi"
+            ? `${contextPrompt}तनाव वात असंतुलन से जुड़ा हो सकता है। ध्यान और योग करें।`
+            : `${contextPrompt}Stress is linked to Vata imbalance. Try meditation and yoga.`,
+      };
     }
-    
-    const recommendations = {
-      Vata: [
-        'Follow regular routines',
-        'Eat warm, cooked foods',
-        'Practice gentle yoga',
-        'Use sesame oil for massage',
-        'Avoid cold and dry foods'
-      ],
-      Pitta: [
-        'Stay cool and calm',
-        'Eat sweet, bitter foods',
-        'Avoid spicy and acidic foods',
-        'Practice moderation',
-        'Use coconut oil for massage'
-      ],
-      Kapha: [
-        'Stay active and energetic',
-        'Eat light, spicy foods',
-        'Exercise regularly',
-        'Avoid heavy, oily foods',
-        'Use mustard oil for massage'
-      ]
-    };
-    
+
+    if (
+      lowerMessage.includes("stomach") ||
+      lowerMessage.includes("digestion")
+    ) {
+      return {
+        response:
+          lang === "hi"
+            ? `${contextPrompt}पाचन सुधारने के लिए अदरक और गर्म पानी लें।`
+            : `${contextPrompt}For digestion, try ginger and warm water.`,
+      };
+    }
+
     return {
-      vata_score: Math.round(vataPercentage),
-      pitta_score: Math.round(pittaPercentage),
-      kapha_score: Math.round(kaphaPercentage),
-      dominant_dosha: dominantDosha,
-      recommendations: recommendations[dominantDosha as keyof typeof recommendations]
+      response:
+        lang === "hi"
+          ? `${contextPrompt}आयुर्वेदिक जीवनशैली अपनाएं, योग और सही आहार लें।`
+          : `${contextPrompt}Follow Ayurvedic lifestyle with proper diet and yoga.`,
     };
-  } catch (error) {
-    console.error('Prakriti API Error:', error);
-    throw new Error('Failed to get Prakriti prediction');
   }
 };
 
-// Emergency detection
+// ===============================
+// 🚨 EMERGENCY DETECTION (FIXED EXPORT SAFE)
+// ===============================
 export const detectEmergency = (message: string): boolean => {
-  const emergencyKeywords = [
-    'chest pain', 'heart attack', 'breathing difficulty', 'unconscious',
-    'severe bleeding', 'stroke', 'allergic reaction', 'poisoning',
-    'high fever', 'suicide', 'severe pain'
+  if (!message) return false;
+
+  const keywords = [
+    "chest pain",
+    "heart attack",
+    "breathing difficulty",
+    "unconscious",
+    "severe bleeding",
+    "stroke",
+    "suicide",
+    "high fever",
+    "severe pain",
+    "can't breathe",
+    "not breathing",
   ];
-  
-  const lowerMessage = message.toLowerCase();
-  return emergencyKeywords.some(keyword => lowerMessage.includes(keyword));
+
+  const lower = message.toLowerCase();
+  return keywords.some((k) => lower.includes(k));
 };

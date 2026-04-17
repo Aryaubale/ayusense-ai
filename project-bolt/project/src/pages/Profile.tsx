@@ -1,83 +1,109 @@
-import React from 'react';
-import { motion } from 'framer-motion';
-import { 
-  UserCircleIcon, 
-  EnvelopeIcon, 
-  MapPinIcon, 
-  BriefcaseIcon, 
-  CakeIcon,
-  IdentificationIcon
-} from '@heroicons/react/24/outline';
-import { useAuth } from '../context/AuthContext';
+import React from "react";
+import { useAuth } from "../context/AuthContext";
+import { motion } from "framer-motion";
+import bgImage from "../assets/illustration.jfif";
 
 export const Profile: React.FC = () => {
   const { user } = useAuth();
 
   if (!user) return null;
 
-  const profileFields = [
-    { label: 'Full Name', value: user.name, icon: UserCircleIcon },
-    { label: 'Email Address', value: user.email, icon: EnvelopeIcon },
-    { label: 'Age', value: user.age ? `${user.age} Years` : 'Not Set', icon: CakeIcon },
-    { label: 'Gender', value: user.gender || 'Not Set', icon: IdentificationIcon },
-    { label: 'Occupation', value: user.occupation || 'Not Set', icon: BriefcaseIcon },
-    { label: 'Location', value: user.location || 'Not Set', icon: MapPinIcon },
-  ];
-
   return (
-    <div className="max-w-4xl mx-auto p-8">
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="bg-white rounded-[2.5rem] shadow-xl border border-green-50 overflow-hidden"
-      >
-        {/* Header/Banner */}
-        <div className="h-32 bg-gradient-to-r from-green-600 to-emerald-700" />
-        
-        <div className="px-8 pb-12">
-          {/* Profile Picture Placeholder */}
-          <div className="relative -mt-16 mb-6">
-            <div className="w-32 h-32 bg-white rounded-3xl p-2 shadow-lg">
-              <div className="w-full h-full bg-green-100 rounded-2xl flex items-center justify-center text-green-600">
-                <span className="text-4xl font-bold">{user.name?.charAt(0)}</span>
-              </div>
-            </div>
-          </div>
+    <div className="min-h-screen flex">
 
-          <div className="mb-10">
-            <h1 className="text-3xl font-bold text-gray-900">{user.name}</h1>
-            <p className="text-gray-500">Ayurvedic Wellness Explorer</p>
-          </div>
+      {/* 🌿 LEFT SIDE IMAGE (VISIBLE ON DESKTOP ONLY) */}
+      <div
+        className="hidden md:block w-1/2 bg-cover bg-center"
+        style={{ backgroundImage: `url(${bgImage})` }}
+      ></div>
 
-          {/* Info Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {profileFields.map((field, idx) => (
-              <div key={idx} className="flex items-center space-x-4 p-4 rounded-2xl bg-gray-50 border border-gray-100">
-                <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-green-600 shadow-sm">
-                  <field.icon className="w-6 h-6" />
-                </div>
-                <div>
-                  <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-                    {field.label}
-                  </p>
-                  <p className="text-lg font-medium text-gray-800">
-                    {field.value}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
+      {/* 🌿 RIGHT SIDE PROFILE SECTION */}
+      <div className="w-full md:w-1/2 flex items-center justify-center bg-[#fdfbf7] px-6">
 
-          {/* Prakriti Badge */}
-          <div className="mt-12 p-6 rounded-3xl bg-green-600 text-white flex items-center justify-between">
+        <motion.div
+          initial={{ opacity: 0, y: 40 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="w-full max-w-md bg-white p-10 rounded-[2rem] shadow-2xl"
+        >
+          {/* Heading */}
+          <h1 className="text-2xl font-semibold text-gray-700 mb-1">
+            Hello there,
+          </h1>
+          <h2 className="text-3xl font-bold text-green-800 mb-8">
+            {user.name}
+          </h2>
+
+          {/* Fields */}
+          <div className="space-y-6">
+
             <div>
-              <p className="text-green-100 text-sm">Stored Prakriti</p>
-              <p className="text-2xl font-bold">{user.prakriti || "Not Analyzed"}</p>
+              <label className="text-xs text-gray-400 uppercase">Email</label>
+              <input
+                value={user.email}
+                readOnly
+                className="w-full border-b border-gray-300 py-2 text-gray-700 outline-none"
+              />
             </div>
-            <div className="text-4xl">🌿</div>
+
+            <div>
+              <label className="text-xs text-gray-400 uppercase">Age</label>
+              <input
+                value={user.age || "Not Set"}
+                readOnly
+                className="w-full border-b border-gray-300 py-2 outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="text-xs text-gray-400 uppercase">Gender</label>
+              <input
+                value={user.gender || "Not Set"}
+                readOnly
+                className="w-full border-b border-gray-300 py-2 outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="text-xs text-gray-400 uppercase">Occupation</label>
+              <input
+                value={user.occupation || "Not Set"}
+                readOnly
+                className="w-full border-b border-gray-300 py-2 outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="text-xs text-gray-400 uppercase">Location</label>
+              <input
+                value={user.location || "Not Set"}
+                readOnly
+                className="w-full border-b border-gray-300 py-2 outline-none"
+              />
+            </div>
+
+            <div>
+              <label className="text-xs text-gray-400 uppercase">Prakriti</label>
+              <input
+                value={user.prakriti || "Vata"}
+                readOnly
+                className="w-full border-b border-gray-300 py-2 outline-none"
+              />
+            </div>
+
           </div>
-        </div>
-      </motion.div>
+
+          {/* Button */}
+          <button
+            className="mt-8 w-full bg-gradient-to-r from-yellow-400 to-orange-400 
+                       text-white py-3 rounded-xl font-semibold shadow-md 
+                       hover:scale-105 transition"
+          >
+            UPDATE PROFILE
+          </button>
+        </motion.div>
+
+      </div>
+
     </div>
   );
 };
