@@ -90,7 +90,7 @@ export const Prakriti = () => {
         ])
       );
 
-      const response = await fetch('http://localhost:5000/api/predict', {
+      const response = await fetch('https://ayusense-ai-3fc9.onrender.com/api/predict', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ answers: cleanedAnswers })
@@ -108,7 +108,7 @@ export const Prakriti = () => {
       };
 
       if (user?.email) {
-        await fetch('http://localhost:5000/api/save_results', {
+        await fetch('https://ayusense-ai-3fc9.onrender.com/api/save_results',  {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

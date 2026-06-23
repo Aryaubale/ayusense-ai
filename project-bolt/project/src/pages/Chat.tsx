@@ -36,7 +36,7 @@ export const Chat: React.FC = () => {
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([]);
 
   // Base API URL
-  const API_URL = "http://localhost:5000/api";
+  const API_URL = "https://ayusense-ai-3fc9.onrender.com/api";
 
   // ================= DELETE MESSAGE =================
   const deleteMessage = async (id: string) => {

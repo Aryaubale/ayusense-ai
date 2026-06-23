@@ -18,7 +18,7 @@ export const History: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'chats' | 'prakriti'>('chats');
 
-  const API_URL = "http://localhost:5000/api";
+  const API_URL = "https://ayusense-ai-3fc9.onrender.com/api";
 
   useEffect(() => {
     if (user) {

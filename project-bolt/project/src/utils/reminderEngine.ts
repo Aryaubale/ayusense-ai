@@ -4,7 +4,7 @@ export const startReminderEngine = (user: any) => {
 
   const sendReminderToUser = async (message: string) => {
     try {
-      await fetch("http://localhost:5000/api/send-reminder", {
+      await fetch("https://ayusense-ai-3fc9.onrender.com/api", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

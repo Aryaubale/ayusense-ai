@@ -16,7 +16,10 @@ import pillarVideo from "../assets/Video_anim.mp4";
 // 🌿 Import the aesthetic CSS
 import "./Dashboard.css";
 
-const API_URL = "http://localhost:5000/api";
+// 🛠️ TYPE FIX: Explicitly type the WelcomePopup component locally to accept onClose
+const TypedWelcomePopup = WelcomePopup as React.ComponentType<{ onClose: () => void }>;
+
+const API_URL = "https://ayusense-ai-3fc9.onrender.com/api";
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -72,7 +75,7 @@ const Dashboard = () => {
   return (
     <div className="bg-[#fdfbf7] min-h-screen font-sans text-gray-900 overflow-x-hidden">
       {showPopup && (
-        <WelcomePopup
+        <TypedWelcomePopup
           onClose={() => {
             localStorage.setItem("seenWelcome", "true");
             setShowPopup(false);

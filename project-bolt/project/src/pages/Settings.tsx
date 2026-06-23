@@ -73,7 +73,10 @@ export const Settings = () => {
     setReminders(updatedReminders);
 
     try {
-      const response = await fetch('http://localhost:5000/api/update_reminders', {
+      const API_URL = "https://ayusense-ai-3fc9.onrender.com/api";
+      
+      // 🛠️ FIX: Added the missing fetch call here
+      const response = await fetch(`${API_URL}/reminders`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

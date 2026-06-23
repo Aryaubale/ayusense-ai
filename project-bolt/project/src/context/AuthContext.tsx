@@ -39,7 +39,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   // In production (Render), this will change to your public URL
-  const API_URL = "http://localhost:5000/api";
+  const API_URL = "https://ayusense-ai-3fc9.onrender.com/api";;
 
   useEffect(() => {
     const storedUser = localStorage.getItem("ayusense_user");
