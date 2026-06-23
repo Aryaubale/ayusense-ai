@@ -13,6 +13,9 @@ import WelcomePopup from "../components/WelcomePopup";
 // 🎥 1. IMPORT YOUR VIDEO HERE
 import pillarVideo from "../assets/Video_anim.mp4";
 
+// 🖼️ HERO IMAGE IMPORTED CORRECTLY FROM ASSETS
+import heroImg from "../assets/hero.jfif";
+
 // 🌿 Import the aesthetic CSS
 import "./Dashboard.css";
 
@@ -107,7 +110,7 @@ const Dashboard = () => {
         <div className="flex-1 relative w-full">
            <div className="absolute -top-10 -right-10 w-64 h-64 bg-blur-green opacity-50" />
            <img
-             src="/src/assets/hero.jfif"
+             src={heroImg}
              className="rounded-[2.5rem] w-full h-[500px] object-cover shadow-2xl grayscale-[20%] hover:grayscale-0 transition-all duration-700"
              alt="Ayurveda Aesthetic"
            />
@@ -126,7 +129,6 @@ const Dashboard = () => {
                 playsInline 
                 className="w-full h-full object-cover scale-105 transition-transform duration-1000"
               >
-                {/* 🌿 2. USE THE IMPORTED VARIABLE HERE */}
                 <source src={pillarVideo} type="video/mp4" />
               </video>
               <div className="absolute inset-0 bg-black/10 group-hover:bg-transparent transition-all duration-500" />
