@@ -1,27 +1,19 @@
-import React, { useEffect, useState } from "react";
+import React from "react";
 
-const WelcomePopup: React.FC = () => {
-  const [show, setShow] = useState(false);
+// 🧬 Define the prop types so TypeScript knows onClose exists
+interface WelcomePopupProps {
+  onClose: () => void;
+}
 
-  useEffect(() => {
-    const hasSeen = localStorage.getItem("seenWelcome");
-
-    if (!hasSeen) {
-      setShow(true);
-      localStorage.setItem("seenWelcome", "true");
-    }
-  }, []);
-
-  if (!show) return null;
-
+const WelcomePopup: React.FC<WelcomePopupProps> = ({ onClose }) => {
   return (
     <div className="fixed inset-0 flex items-center justify-center z-50">
-
+      
       {/* Background blur */}
-      <div className="absolute inset-0 bg-black/30"></div>
+      <div className="absolute inset-0 bg-black/30 backdrop-blur-sm"></div>
 
       {/* Popup */}
-      <div className="relative bg-white rounded-xl p-6 w-[90%] max-w-md text-center shadow-xl">
+      <div className="relative bg-white rounded-xl p-6 w-[90%] max-w-md text-center shadow-xl z-10 animate-fade-in">
 
         <h2 className="text-xl font-semibold text-green-800 mb-3">
           🌿 Discover Your Prakriti
@@ -32,8 +24,8 @@ const WelcomePopup: React.FC = () => {
         </p>
 
         <button
-          onClick={() => setShow(false)}
-          className="bg-green-600 text-white px-5 py-2 rounded-lg hover:bg-green-700 transition"
+          onClick={onClose} // 🎯 Calls the parent function to close cleanly and handle next steps
+          className="bg-green-600 text-white px-5 py-2 rounded-lg hover:bg-green-700 transition font-medium shadow-md"
         >
           Know Your Constitution
         </button>
