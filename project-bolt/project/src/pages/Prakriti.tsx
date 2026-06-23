@@ -80,45 +80,55 @@ export const Prakriti = () => {
     }
 
     setLoading(true);
+
     try {
+      // ✅ normalize answers (IMPORTANT FIX)
+      const cleanedAnswers = Object.fromEntries(
+        Object.entries(answers).map(([key, value]) => [
+          key,
+          String(value).trim().toLowerCase()
+        ])
+      );
+
       const response = await fetch('http://localhost:5000/api/predict', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ answers })
+        body: JSON.stringify({ answers: cleanedAnswers })
       });
 
       const data = await response.json();
 
-      if (data.success) {
-        const finalResults = { 
-          dominant_dosha: data.dominant_dosha, 
-          stats: data.stats 
-        };
-        
-        if (user?.email) {
-          await fetch('http://localhost:5000/api/save_results', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              email: user.email,
-              dominant_dosha: data.dominant_dosha,
-              stats: data.stats
-            })
-          });
-
-          updateUserPrakriti({ 
-            prakriti: data.dominant_dosha, 
-            stats: data.stats 
-          });
-        }
-
-        setResults(finalResults);
-        setShowResults(true);
-        toast.success("Analysis Complete!");
-      } else {
-        throw new Error(data.error);
+      if (!data.success) {
+        throw new Error(data.error || "Prediction failed");
       }
-    } catch (e) {
+
+      const finalResults = {
+        dominant_dosha: data.dominant_dosha,
+        stats: data.stats
+      };
+
+      if (user?.email) {
+        await fetch('http://localhost:5000/api/save_results', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: user.email,
+            dominant_dosha: data.dominant_dosha,
+            stats: data.stats
+          })
+        });
+
+        updateUserPrakriti({
+          prakriti: data.dominant_dosha,
+          stats: data.stats
+        });
+      }
+
+      setResults(finalResults);
+      setShowResults(true);
+      toast.success("Analysis Complete!");
+    } catch (err) {
+      console.error(err);
       toast.error("AI Server Error. Check Flask.");
     } finally {
       setLoading(false);

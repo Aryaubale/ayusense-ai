@@ -44,10 +44,13 @@ try:
         tlsAllowInvalidCertificates=True,
         serverSelectionTimeoutMS=30000
     )
+
     db = client.ayusense_db
     users_collection = db.users
+
     client.admin.command('ping')
     print("✅ MongoDB Connected Successfully!")
+
 except Exception as e:
     print("❌ MongoDB Connection Error:", e)
     traceback.print_exc()
@@ -62,15 +65,22 @@ try:
     model = joblib.load(os.path.join(BASE_DIR, 'prakriti_model.pkl'))
     model_columns = joblib.load(os.path.join(BASE_DIR, 'model_columns.pkl'))
     encoder = joblib.load(os.path.join(BASE_DIR, 'dosha_encoder.pkl'))
-    COLUMN_MAP = {col.lower().strip(): col for col in model_columns}
+
+    COLUMN_MAP = {
+        col.lower().strip(): col for col in model_columns
+    }
+
     print("✅ AI Model Loaded Successfully!")
+
 except Exception as e:
     print("❌ Model Loading Error:", e)
     traceback.print_exc()
 
 # ================================
+# HELPER FUNCTIONS
+# ================================
 def find_matching_column(question, answer):
-    key = f"{question}_{answer}".strip().lower()
+    key = f"{question.strip()}_{answer.strip()}".lower()
     return COLUMN_MAP.get(key)
 
 # ================================
@@ -80,6 +90,7 @@ def send_email(to_email, subject, message):
         app_password = os.getenv("EMAIL_PASS")
 
         msg = MIMEText(message)
+
         msg["Subject"] = subject
         msg["From"] = sender_email
         msg["To"] = to_email
@@ -103,12 +114,20 @@ def send_email(to_email, subject, message):
 def signup():
     try:
         data = request.json
+
         email = data.get('email')
 
         if users_collection.find_one({"email": email}):
-            return jsonify({"success": False, "error": "Email already exists"}), 400
+            return jsonify({
+                "success": False,
+                "error": "Email already exists"
+            }), 400
 
-        hashed_pw = bcrypt.hashpw(data.get('password').encode(), bcrypt.gensalt())
+        # ✅ FIXED PASSWORD HASHING
+        hashed_pw = bcrypt.hashpw(
+            data.get('password').encode('utf-8'),
+            bcrypt.gensalt()
+        ).decode('utf-8')
 
         users_collection.insert_one({
             "name": data.get('name'),
@@ -121,22 +140,37 @@ def signup():
             "prakriti": "Not Analyzed",
             "stats": {},
             "chats": [],
-            "reminders": {"brahmaMuhurta": True, "dinacharya": True, "herbReminder": True}
+            "reminders": {
+                "brahmaMuhurta": True,
+                "dinacharya": True,
+                "herbReminder": True
+            }
         })
 
         return jsonify({"success": True})
 
     except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 500
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
 
-
+# ================================
 @app.route('/api/login', methods=['POST'])
 def login():
     try:
         data = request.json
-        user = users_collection.find_one({"email": data.get('email')})
 
-        if user and bcrypt.checkpw(data.get('password').encode(), user['password']):
+        user = users_collection.find_one({
+            "email": data.get('email')
+        })
+
+        # ✅ FIXED PASSWORD CHECK
+        if user and bcrypt.checkpw(
+            data.get('password').encode('utf-8'),
+            user['password'].encode('utf-8')
+        ):
+
             user['_id'] = str(user['_id'])
 
             if "reminders" not in user:
@@ -148,13 +182,21 @@ def login():
 
             user.pop('password', None)
 
-            return jsonify({"success": True, "user": user})
+            return jsonify({
+                "success": True,
+                "user": user
+            })
 
-        return jsonify({"success": False, "error": "Invalid credentials"}), 401
+        return jsonify({
+            "success": False,
+            "error": "Invalid credentials"
+        }), 401
 
     except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 500
-
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
 
 # ================================
 # CHAT HISTORY
@@ -163,12 +205,24 @@ def login():
 def get_chat_history():
     try:
         email = request.args.get('email')
-        user = users_collection.find_one({"email": email}, {"chats": 1, "_id": 0})
-        return jsonify({"success": True, "history": user.get("chats", []) if user else []})
+
+        user = users_collection.find_one(
+            {"email": email},
+            {"chats": 1, "_id": 0}
+        )
+
+        return jsonify({
+            "success": True,
+            "history": user.get("chats", []) if user else []
+        })
+
     except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 500
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
 
-
+# ================================
 @app.route('/api/save_chat', methods=['POST'])
 def save_chat():
     try:
@@ -186,21 +240,31 @@ def save_chat():
             {"$push": {"chats": chat_entry}}
         )
 
-        return jsonify({"success": True, "chat": chat_entry})
+        return jsonify({
+            "success": True,
+            "chat": chat_entry
+        })
 
     except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 500
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
 
-
+# ================================
 @app.route('/api/delete_message', methods=['DELETE'])
 def delete_message():
     try:
         data = request.json
+
         email = data.get("email")
         msg_id = data.get("id")
 
         if not email or not msg_id:
-            return jsonify({"success": False, "error": "Missing data"}), 400
+            return jsonify({
+                "success": False,
+                "error": "Missing data"
+            }), 400
 
         users_collection.update_one(
             {"email": email},
@@ -210,32 +274,193 @@ def delete_message():
         return jsonify({"success": True})
 
     except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 500
-
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
 
 # ================================
-# PASSWORD RESET
+# PRAKRITI PREDICTION
+# ================================
+@app.route('/api/predict', methods=['POST', 'OPTIONS'])
+def predict():
+
+    if request.method == 'OPTIONS':
+        return '', 200
+
+    try:
+        data = request.json
+        answers = data.get("answers")
+
+        # Initialize all columns to 0
+        input_data = {
+            col: 0 for col in model_columns
+        }
+
+        matched_count = 0
+
+        # Match answers to columns
+        for question, answer in answers.items():
+
+            col = find_matching_column(question, answer)
+
+            if col:
+                input_data[col] = 1
+                matched_count += 1
+
+            else:
+                print(f"⚠️ NO MATCH FOUND FOR: {question} -> {answer}")
+
+        print(f"✅ Successfully matched {matched_count} out of {len(answers)} questions!")
+
+        df = pd.DataFrame([input_data])
+
+        # Prediction
+        prediction = model.predict(df)
+
+        decoded = encoder.inverse_transform(prediction)[0]
+
+        # Dynamic stats
+        try:
+            probabilities = model.predict_proba(df)[0]
+
+            classes = encoder.classes_
+
+            dynamic_stats = {
+                classes[i]: round(prob * 100)
+                for i, prob in enumerate(probabilities)
+            }
+
+        except AttributeError:
+            dynamic_stats = {
+                "Vata": 33,
+                "Pitta": 33,
+                "Kapha": 34
+            }
+
+            print("⚠️ Model does not support predict_proba")
+
+        return jsonify({
+            "success": True,
+            "dominant_dosha": decoded,
+            "stats": dynamic_stats
+        })
+
+    except Exception as e:
+        print("❌ Predict Error:", e)
+        traceback.print_exc()
+
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+# ================================
+# SAVE RESULTS
+# ================================
+@app.route('/api/save_results', methods=['POST'])
+def save_results():
+    try:
+        data = request.json
+
+        users_collection.update_one(
+            {"email": data.get("email")},
+            {
+                "$set": {
+                    "prakriti": data.get("dominant_dosha"),
+                    "stats": data.get("stats")
+                }
+            }
+        )
+
+        return jsonify({"success": True})
+
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+# ================================
+# GET USER PROFILE
+# ================================
+@app.route('/api/get_user_profile', methods=['GET'])
+def get_user_profile():
+    try:
+        email = request.args.get('email')
+
+        user = users_collection.find_one(
+            {"email": email},
+            {
+                "_id": 0,
+                "prakriti": 1,
+                "stats": 1
+            }
+        )
+
+        if user:
+            return jsonify({
+                "success": True,
+                "prakriti": user.get("prakriti", "Not Analyzed"),
+                "stats": user.get("stats", {})
+            })
+
+        return jsonify({
+            "success": False,
+            "error": "User not found"
+        })
+
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
+
+# ================================
+# FORGOT PASSWORD
 # ================================
 @app.route('/api/forgot-password', methods=['POST'])
 def forgot_password():
     try:
         email = request.json.get("email")
-        user = users_collection.find_one({"email": email})
+
+        user = users_collection.find_one({
+            "email": email
+        })
 
         if not user:
-            return jsonify({"success": False, "error": "User not found"}), 404
+            return jsonify({
+                "success": False,
+                "error": "User not found"
+            }), 404
 
         otp = str(random.randint(100000, 999999))
-        otp_store[email] = {"otp": otp, "expires": time.time() + 300}
 
-        send_email(email, "Ayusense OTP Verification", f"Your OTP is: {otp}")
+        otp_store[email] = {
+            "otp": otp,
+            "expires": time.time() + 300
+        }
 
-        return jsonify({"success": True, "message": "OTP sent"})
+        send_email(
+            email,
+            "Ayusense OTP Verification",
+            f"Your OTP is: {otp}"
+        )
+
+        return jsonify({
+            "success": True,
+            "message": "OTP sent"
+        })
 
     except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 500
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
 
-
+# ================================
+# VERIFY OTP
+# ================================
 @app.route('/api/verify-otp', methods=['POST'])
 def verify_otp():
     try:
@@ -243,26 +468,41 @@ def verify_otp():
         otp = request.json.get("otp")
 
         if email not in otp_store:
-            return jsonify({"success": False, "error": "OTP expired"}), 400
+            return jsonify({
+                "success": False,
+                "error": "OTP expired"
+            }), 400
 
         data = otp_store[email]
 
         if time.time() > data["expires"] or data["otp"] != otp:
-            return jsonify({"success": False, "error": "Invalid/Expired OTP"}), 400
+            return jsonify({
+                "success": False,
+                "error": "Invalid/Expired OTP"
+            }), 400
 
         return jsonify({"success": True})
 
     except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 500
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
 
-
+# ================================
+# RESET PASSWORD
+# ================================
 @app.route('/api/reset-password', methods=['POST'])
 def reset_password():
     try:
         email = request.json.get("email")
         new_password = request.json.get("password")
 
-        hashed_pw = bcrypt.hashpw(new_password.encode(), bcrypt.gensalt())
+        # ✅ FIXED PASSWORD HASHING
+        hashed_pw = bcrypt.hashpw(
+            new_password.encode('utf-8'),
+            bcrypt.gensalt()
+        ).decode('utf-8')
 
         users_collection.update_one(
             {"email": email},
@@ -272,9 +512,14 @@ def reset_password():
         return jsonify({"success": True})
 
     except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 500
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
 
-
+# ================================
+# UPDATE REMINDERS
+# ================================
 @app.route('/api/update_reminders', methods=['POST'])
 def update_reminders():
     try:
@@ -282,18 +527,29 @@ def update_reminders():
 
         users_collection.update_one(
             {"email": data.get("email")},
-            {"$set": {"reminders": data.get("reminders")}}
+            {
+                "$set": {
+                    "reminders": data.get("reminders")
+                }
+            }
         )
 
         return jsonify({"success": True})
 
     except Exception as e:
-        return jsonify({"success": False, "error": str(e)}), 500
-
+        return jsonify({
+            "success": False,
+            "error": str(e)
+        }), 500
 
 # ================================
 # RUN SERVER
 # ================================
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
-    app.run(host='0.0.0.0', port=port, debug=True)
+
+    app.run(
+        host='0.0.0.0',
+        port=port,
+        debug=True
+    )

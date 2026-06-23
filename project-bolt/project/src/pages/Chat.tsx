@@ -38,16 +38,15 @@ export const Chat: React.FC = () => {
   // Base API URL
   const API_URL = "http://localhost:5000/api";
 
-  // ================= DELETE MESSAGE (FIXED TO MATCH BACKEND) =================
+  // ================= DELETE MESSAGE =================
   const deleteMessage = async (id: string) => {
     try {
-      // ✅ Changed endpoint to /delete_message to match your friend's code
       const response = await fetch(`${API_URL}/delete_message`, {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ 
           email: user?.email, 
-          id: id // ✅ Changed chatId to id to match your friend's data.get("id")
+          id: id
         }),
       });
 
@@ -149,7 +148,10 @@ export const Chat: React.FC = () => {
     setInputMessage("");
     setSuggestions([]);
     setIsLoading(true);
-    if (detectEmergency(msg)) toast.error("⚠️ Emergency Alert!");
+
+    // ✅ Emergency detection added
+    const isEmergency = detectEmergency(msg);
+    if (isEmergency) toast.error("⚠️ Emergency Alert!");
 
     const id = Date.now().toString();
     const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
@@ -162,20 +164,27 @@ export const Chat: React.FC = () => {
           ? `You are an Ayurvedic doctor. User Prakriti: ${user.prakriti}\n\nGive a structured answer including:\n- Cause\n- Remedy\n- Diet\n- Lifestyle\n\nQuestion: ${msg}`
           : msg;
 
-      const { response } = await getChatResponse(enrichedMessage, [], user?.prakriti || "", lang);
+      // ✅ Emergency response override added
+      let responseText = "";
 
-      // ✅ POST to /save_chat
+      if (isEmergency) {
+        responseText = "⚠️ Contact doctor or seek immediate help immediately.";
+      } else {
+        const { response } = await getChatResponse(enrichedMessage, [], user?.prakriti || "", lang);
+        responseText = response;
+      }
+
       await fetch(`${API_URL}/save_chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email: user?.email,
           message: msg,
-          response: response
+          response: responseText
         }),
       });
 
-      setMessages(prev => prev.map(m => m.id === id ? { ...m, response, isLoading: false } : m));
+      setMessages(prev => prev.map(m => m.id === id ? { ...m, response: responseText, isLoading: false } : m));
     } catch (err) {
       toast.error("Network Error");
       setMessages(prev => prev.filter(m => m.id !== id));
